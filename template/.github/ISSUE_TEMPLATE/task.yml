@@ -1,0 +1,50 @@
+name: Task
+description: One unit of work in Acme (feature, chore, refactor, docs, design).
+labels: ["status:todo"]
+body:
+  - type: dropdown
+    id: type
+    attributes:
+      label: Type
+      description: Sets the type:* label and the branch prefix.
+      options: [feat, chore, refactor, docs, design, fix]
+    validations:
+      required: true
+  - type: dropdown
+    id: repos
+    attributes:
+      label: Repos
+      description: Sets repo:* labels. A branch is cut in each one when the ticket is claimed.
+      multiple: true
+      options: [app, web, kb]
+    validations:
+      required: true
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      options: [p2, p1]
+      default: 0
+  - type: textarea
+    id: why
+    attributes:
+      label: Why
+      description: The problem or outcome.
+    validations:
+      required: true
+  - type: textarea
+    id: done
+    attributes:
+      label: Done when
+      description: Checkable conditions. One per line.
+      placeholder: "- [ ] ..."
+    validations:
+      required: true
+  - type: input
+    id: estimate
+    attributes:
+      label: Estimate
+      description: Time to finish with your coding agent (~45m, ~2h, ~2d; a day is 8h).
+      placeholder: "~2h"
+    validations:
+      required: true

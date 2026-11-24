@@ -1,0 +1,47 @@
+name: test
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ["tools/**", ".githooks/**", ".github/workflows/test.yml"]
+  pull_request:
+    paths: ["tools/**", ".githooks/**", ".github/workflows/test.yml"]
+
+permissions:
+  contents: read
+
+jobs:
+  ticket-sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    defaults:
+      run:
+        working-directory: tools/ticket-sync
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: tools/ticket-sync/package-lock.json
+      - run: npm ci
+      - run: npm test
+      - run: npm run typecheck
+
+  notes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    defaults:
+      run:
+        working-directory: tools/notes
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: tools/notes/package-lock.json
+      - run: npm ci
+      - run: npm test
+      - run: npm run typecheck

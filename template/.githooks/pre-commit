@@ -1,0 +1,2 @@
+#!/bin/sh
+exec node tools/notes/notes.ts check --staged

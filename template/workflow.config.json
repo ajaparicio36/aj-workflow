@@ -1,0 +1,13 @@
+{
+  "name": "Acme",
+  "owner": "acme",
+  "hub": "acme-kb",
+  "ticketKey": "ACME",
+  "repos": { "app": "acme-app", "web": "acme-web", "kb": "acme-kb" },
+  "jira": { "baseUrl": "https://acme.atlassian.net" },
+  "agents": ["claude"],
+  "mode": "orchestrated",
+  "models": {
+    "claude": { "lead": "opus", "researcher": "haiku", "redteam": "fable", "rescue": "fable", "worker": "sonnet" }
+  }
+}

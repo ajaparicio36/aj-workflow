@@ -1,0 +1,14 @@
+name: ticket-status
+
+# Copy of acme-kb/kit/github/ticket-status.yml. Needs repo secrets
+# KB_BOT_TOKEN, JIRA_EMAIL, JIRA_API_TOKEN (set by kit/scripts/bootstrap-github.sh).
+on:
+  pull_request:
+    types: [opened, reopened, ready_for_review, converted_to_draft, closed]
+
+jobs:
+  ticket:
+    # forks and Dependabot get no secrets
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]'
+    uses: acme/acme-kb/.github/workflows/pr-lifecycle.yml@main
+    secrets: inherit
