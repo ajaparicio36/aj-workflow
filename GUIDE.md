@@ -119,6 +119,8 @@ Why the roles split this way: the expensive model only judges, cheap models do t
 
 Claude Code defaults: lead `opus`, researcher `haiku`, redteam and rescue `fable`, workers `sonnet`. Pick your own per agent in `workflow.config.json`.
 
+The orchestrator also works without a hub: `npx skills add ajaparicio36/aj-workflow --skill orchestrator`, then `node <skill-dir>/scripts/roles.mjs --agent <agent>` (see the README). In a hub, `kit/install.mjs` runs that same script with your config's models.
+
 Orchestrated preflight, once per code repo: a CodeGraph index (`npx @colbymchenry/codegraph`, then `codegraph init -i` in the repo root), and `.orchestrator/`, `.codegraph/`, `.claude/worktrees/` in `.gitignore`.
 
 ## 7. Agents

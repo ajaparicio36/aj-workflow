@@ -31,6 +31,17 @@ node aj-workflow/skills/setup-aj-workflow/scripts/setup.mjs --workspace ./my-wor
 
 Needs Node 24+, git, and `gh` (GitHub CLI) for the GitHub side.
 
+## Just the orchestrator
+
+No hub, no tickets: the multi-agent pipeline on its own, for any repo.
+
+```bash
+npx skills add ajaparicio36/aj-workflow --skill orchestrator
+node <skills folder>/orchestrator/scripts/roles.mjs --agent claude
+```
+
+`roles.mjs` writes the five subagent definitions (researcher, red-team, rescue, worker, quick) to your agent's user folder. Use `--agent codex` or `--agent opencode` for those agents (repeatable), `--project .` to keep them in one repo, and `--model worker=<id>` to pin a role's model. Then ask your agent to use the orchestrator on a multi-file change: it researches with CodeGraph, writes a spec and a task DAG, has a fresh-context model attack them, builds the tasks in parallel git worktrees, and runs a final gate. One-file edits take its quick path. The preflight in [skills/orchestrator/SKILL.md](skills/orchestrator/SKILL.md) lists what it checks first (CodeGraph index, feature branch, Claude Code's `worktree.baseRef`).
+
 ## Read next
 
 - [GUIDE.md](GUIDE.md): how the pattern works, the one-time GitHub and Jira setup, the daily loop, agents and models, and how to make your fork your own.
@@ -41,7 +52,9 @@ Needs Node 24+, git, and `gh` (GitHub CLI) for the GitHub side.
 
 | Path | What |
 |---|---|
-| `skills/setup-aj-workflow/` | The setup skill and its zero-dependency script (what `npx skills add` installs) |
-| `template/` | The hub template: docs, ADRs 0001-0005, notes tool, ticket-sync, workflows, kit (skills `dev`, `ticket`, `ship`, `orchestrator`) |
+| `skills/setup-aj-workflow/` | The setup skill and its zero-dependency script |
+| `skills/orchestrator/` | The standalone orchestrator: `SKILL.md`, `roles/` (subagent prompts), `bin/` (plan and research gates), `scripts/roles.mjs`. Setup copies it into each hub's `kit/skills/` |
+| `template/` | The hub template: docs, ADRs 0001-0005, notes tool, ticket-sync, workflows, kit (skills `dev`, `ticket`, `ship`) |
+| `LICENSE` | MIT |
 | `examples/` | Sample notes |
 | `tests/` | `node --test tests/setup.test.mjs` scaffolds a hub from `template/` and checks it |

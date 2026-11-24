@@ -95,13 +95,15 @@ function walk(dir, out = []) {
 export async function setup(answers, workspace, templateDir) {
   const c = normalise(answers);
   const template = findTemplate(templateDir);
-  const { readConfig } = await import(pathToFileURL(path.join(template, "kit", "install.mjs")).href);
   const dest = path.join(workspace, c.hub);
   if (fs.existsSync(dest) && fs.readdirSync(dest).length > 0) throw new Error(`${dest} exists and is not empty; pick another hub name or move it`);
 
   fs.mkdirSync(workspace, { recursive: true });
   fs.cpSync(template, dest, { recursive: true, filter: (src) => !src.split(path.sep).includes("node_modules") });
+  // The orchestrator ships once, as a standalone skill at the repo root; each hub gets its own copy.
+  fs.cpSync(path.join(path.dirname(template), "skills", "orchestrator"), path.join(dest, "kit", "skills", "orchestrator"), { recursive: true });
   fs.writeFileSync(path.join(dest, "workflow.config.json"), `${JSON.stringify(c, null, 2)}\n`);
+  const { readConfig } = await import(pathToFileURL(path.join(dest, "kit", "install.mjs")).href);
   readConfig(path.join(dest, "workflow.config.json"));
 
   // tools/ keeps the sample names: its tests run against their own fixture config.

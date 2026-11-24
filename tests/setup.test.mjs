@@ -103,3 +103,23 @@ describe("setup", () => {
     await assert.rejects(quiet(() => setup(solo, ws, TEMPLATE)), /not empty/);
   });
 });
+
+describe("standalone orchestrator roles.mjs", () => {
+  const script = path.resolve(import.meta.dirname, "..", "skills", "orchestrator", "scripts", "roles.mjs");
+  const run = (...args) => execFileSync(process.execPath, [script, ...args], { encoding: "utf8" });
+
+  it("writes project-level roles, pins models, and leaves hand-written files alone", () => {
+    const repo = fs.mkdtempSync(path.join(os.tmpdir(), "ajw-roles-"));
+    fs.mkdirSync(path.join(repo, ".claude", "agents"), { recursive: true });
+    fs.writeFileSync(path.join(repo, ".claude", "agents", "orchestrator-rescue.md"), "mine");
+    const out = run("--agent", "claude", "--agent", "codex", "--project", repo, "--model", "worker=w-1");
+    assert.match(out, /orchestrator-rescue\.md is hand-written; left alone/);
+    assert.equal(read(repo, ".claude", "agents", "orchestrator-rescue.md"), "mine");
+    assert.match(read(repo, ".claude", "agents", "orchestrator-worker.md"), /^---\nname: orchestrator-worker\n[\s\S]*model: w-1\n[\s\S]*isolation: worktree/);
+    assert.match(read(repo, ".claude", "agents", "orchestrator-researcher.md"), /model: haiku/);
+    assert.match(read(repo, ".codex", "agents", "orchestrator-quick.toml"), /model = "w-1"/);
+    assert.doesNotMatch(read(repo, ".codex", "agents", "orchestrator-redteam.toml"), /^model =/m);
+    run("--agent", "claude", "--project", repo);
+    assert.match(read(repo, ".claude", "agents", "orchestrator-worker.md"), /model: sonnet/);
+  });
+});

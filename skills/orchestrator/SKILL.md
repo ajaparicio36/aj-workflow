@@ -1,6 +1,6 @@
 ---
 name: "orchestrator"
-description: "Multi-agent coding orchestrator for Claude Code: Haiku+CodeGraph research, Opus spec and DAG plan, Fable red-team and rescue, parallel Sonnet workers in git worktrees, scripted verification gates. Use for multi-file features, refactors and CRUD modules."
+description: "Multi-agent coding orchestrator (Claude Code first; Codex and OpenCode through generated role files): Haiku+CodeGraph research, Opus spec and DAG plan, Fable red-team and rescue, parallel Sonnet workers in git worktrees, scripted verification gates. Use for multi-file features, refactors and CRUD modules."
 ---
 
 # Orchestrator
@@ -26,7 +26,8 @@ claude --version                                   # want >= 2.1.296 (per-agent 
 git rev-parse --abbrev-ref HEAD && git status --porcelain | head
 ls -d .codegraph 2>/dev/null || echo "NO CODEGRAPH INDEX"
 grep -s '"baseRef"' .claude/settings.json .claude/settings.local.json ~/.claude/settings.json || echo "NO baseRef"
-ls .claude/agents/orchestrator-*.md .codex/agents/orchestrator-*.toml .opencode/agents/orchestrator-*.md 2>/dev/null
+ls .claude/agents/orchestrator-*.md ~/.claude/agents/orchestrator-*.md .codex/agents/orchestrator-*.toml ~/.codex/agents/orchestrator-*.toml \
+   .opencode/agents/orchestrator-*.md ~/.config/opencode/agents/orchestrator-*.md 2>/dev/null
 echo "AUTO_COMPACT_WINDOW=${CLAUDE_CODE_AUTO_COMPACT_WINDOW:-unset}"
 ```
 
@@ -35,12 +36,12 @@ echo "AUTO_COMPACT_WINDOW=${CLAUDE_CODE_AUTO_COMPACT_WINDOW:-unset}"
 | **CodeGraph index** (`.codegraph/` exists and `mcp__codegraph__*` tools are loaded) | Yes | Advise the user to generate it, and offer to run it: `npx @colbymchenry/codegraph` (installer; writes the MCP config, then **restart Claude Code**), then in the project root `codegraph init -i` (indexing can take a few minutes on large repos). Without the index, Haiku falls back to blind grep loops, which defeats Stage 1. Only continue in degraded mode if the user says so, and mark `research.md` as `DEGRADED`. If the folder exists but `codegraph_status` reports it stale, re-run `codegraph index`. |
 | **On a feature branch**, tree clean | Yes | Worktrees merge back into this branch. If on main/master/the default branch, create `feat/<slug>`. Commit or stash unrelated changes. |
 | **`worktree.baseRef: "head"`** in `.claude/settings.local.json` (or settings.json) | Yes | Without it, worktrees branch from the remote default branch, so workers never see earlier tasks' commits or your feature branch. Offer to add `{"worktree": {"baseRef": "head"}}`; a session restart may be needed. |
-| **Role files** installed for this agent | Yes | Run `node <hub>/kit/install.mjs` from the workspace (it reads `workflow.config.json`). They carry the model, effort, compaction window and worktree settings; a spawn without them silently inherits the wrong model. |
+| **Role files** installed for this agent | Yes | Run `node <skill-dir>/scripts/roles.mjs --agent <claude, codex or opencode>` (user-level; add `--project .` for this repo only, `--model worker=<id>` to change a role's model). They carry the model, effort, compaction window and worktree settings; a spawn without them silently inherits the wrong model. |
 | **`CLAUDE_CODE_AUTO_COMPACT_WINDOW` unset** | Yes | That variable overrides every per-agent window and `/autocompact`. Ask the user to unset it. |
 | **Local excludes** | No | Append `.orchestrator/`, `.codegraph/`, `.claude/worktrees/` to `.git/info/exclude` so nothing is committed or shows as dirty. |
 | **Lead window** | No | Tell the user once: run `/autocompact 300k` for the Opus lead (see section 3). |
 
-Misspelled frontmatter fields are ignored silently. After installing, the first time through, confirm with `/tasks` that each subagent shows the model you expect, and `claude --debug` shows `invalid autoCompactWindow` if a window was rejected.
+On Codex or OpenCode, skip the `claude --version`, `baseRef`, `AUTO_COMPACT_WINDOW` and lead-window checks. Misspelled frontmatter fields are ignored silently. After installing, the first time through, confirm with `/tasks` that each subagent shows the model you expect, and `claude --debug` shows `invalid autoCompactWindow` if a window was rejected.
 
 ## 2. Roles
 
@@ -52,7 +53,7 @@ Misspelled frontmatter fields are ignored silently. After installing, the first 
 | Rescue | `orchestrator-rescue` | Fable 5.2 / high | none (single shot) | one directive |
 | Workers | `orchestrator-worker` | Sonnet 5.5 / high | 150000 | branch + commit per task |
 
-These are the Claude Code defaults. The models in use for each agent are in the hub's `AGENTS.md` ("How work runs") and `workflow.config.json`.
+These are the Claude Code defaults. Other agents use their own default model per role unless you pin one with `scripts/roles.mjs --model <role>=<id>`.
 
 Why Fable runs as subagents and not through the advisor: the advisor tool receives the caller's **entire transcript** and is invoked at the caller's discretion. That gives a second opinion with the author's reasoning attached, which is the confirmation bias the red-team exists to remove, and it cannot be forced at a pipeline gate. Keep the advisor enabled as a bonus for the lead's own hard calls, but never substitute it for Stages 4 and 5.
 
@@ -123,7 +124,7 @@ Finish with a short report: what shipped, acceptance criteria status, anything b
 
 ## Files beside this skill
 
-- `roles/orchestrator-*.md`: the subagent definitions (Claude Code format). `kit/install.mjs` in the hub turns them into `.claude/agents/`, `.codex/agents/*.toml` and `.opencode/agents/` files with the models from `workflow.config.json`. Change prompts here, models in the config, then re-run the installer.
+- `roles/orchestrator-*.md`: the subagent definitions (Claude Code format). `scripts/roles.mjs` turns them into `.claude/agents/*.md`, `.codex/agents/*.toml` or `.opencode/agents/*.md`. Change a prompt here, then re-run it; it rewrites only files it generated.
 - `bin/validate_plan.py`, `bin/verify_research.py`: zero-token gates, run with `python3` (on Windows `python` or `py -3` if `python3` is the Store alias). `<skill-dir>` is the folder this SKILL.md was loaded from.
 
 ## Running on Codex, OpenCode and other agents
@@ -133,4 +134,4 @@ The pipeline is the same; three Claude Code features are not:
 - **Per-agent compaction windows** (`autoCompactWindow`, `/autocompact`). Elsewhere, keep tasks to 2-5 files so a worker never needs one.
 - **Resuming a worker** after a rescue (SendMessage). Elsewhere, spawn a fresh worker told to continue in the same worktree.
 
-Spawn roles by the names in `roles/` (Codex: `spawn_agent` with that agent type; OpenCode: the task tool with that subagent). If your agent cannot spawn subagents with their own model, switch the hub to solo mode (`"mode": "solo"`).
+Spawn roles by the names in `roles/` (Codex: `spawn_agent` with that agent type; OpenCode: the task tool with that subagent). If your agent cannot spawn subagents with their own model, run the same stages yourself in one session: research, spec and plan through the same gates, then build the tasks in wave order and red-team your own spec before the final gate.
